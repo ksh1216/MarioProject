@@ -55,7 +55,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc, memdc, bufferdc;
 	PAINTSTRUCT ps;
-	static CImage lio, walk, bg, riohpbar, riohp;
+	static CImage lio, walk, bg, riohpbar, riohp, hurt;
 	static Character Lio;
 	static HBITMAP hBitmap;
 	static int offset;
@@ -66,7 +66,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	case WM_CREATE:
 		lio.Load(L"mario\\stand.png");
 		walk.Load(L"mario\\run.png");
-		//walk.Load(L"Lio_walk.png");
+		hurt.Load(L"mario\\hurt.png");
 		bg.Load(L"BG.jpg");
 		riohpbar.Load(L"mario\\hp_bar.png");
 		riohp.Load(L"mario\\hp.png");
@@ -103,6 +103,10 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			//walk
 			walk.Draw(memdc, Lio.currPos.x, 380, 35 * 4, 36 * 4, offset * 35, 0, 35, 36);
 		}
+		else if (Lio.pose == 5) {
+			//hult
+			hurt.Draw(memdc, Lio.currPos.x, 380, 35 * 4, 36 * 4, 0, 0, 30, 38);
+		}
 
 		BitBlt(hdc, 0, 0, 800, 600, memdc, 0, 0, SRCCOPY);
 		DeleteObject(hBitmap);
@@ -136,12 +140,12 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 			}
 			else if (GetAsyncKeyState(VK_SPACE)) // 현재 키의 토글 상태를 알 수 있다
 			{
-				Lio.pose = 0;
+				Lio.pose = 5;
 				rio_hp -= 5;
 			}
 			else {
 				Lio.pose = 0;
-				offset = 0;
+				//offset = 0;
 			}
 			break;
 		}
