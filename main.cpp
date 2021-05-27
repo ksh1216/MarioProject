@@ -1,4 +1,4 @@
-#include <windows.h>		//--- À©µµ¿ì Çì´õ ÆÄÀÏ
+#include <windows.h>		//--- ìœˆë„ìš° í—¤ë” íŒŒì¼
 #include <tchar.h>
 #include <atlimage.h>
 
@@ -39,7 +39,7 @@ int WINAPI WinMain(HINSTANCE hInstance, HINSTANCE hPrevInstance, LPSTR lpszCmdPa
 	WndClass.hIconSm = LoadIcon(NULL, IDI_APPLICATION);
 	RegisterClassEx(&WndClass);
 
-	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);		// À©µµ¿ì Å©±â º¯°æ °¡´É
+	hWnd = CreateWindow(lpszClass, lpszWindowName, WS_OVERLAPPEDWINDOW, 0, 0, 800, 600, NULL, (HMENU)NULL, hInstance, NULL);		// ìœˆë„ìš° í¬ê¸° ë³€ê²½ ê°€ëŠ¥
 
 	ShowWindow(hWnd, nCmdShow);
 	UpdateWindow(hWnd);
@@ -55,20 +55,29 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc, memdc, bufferdc;
 	PAINTSTRUCT ps;
-	static CImage lio, walk, bg;
+	static CImage lio, walk, bg, riohpbar, riohp;
 	static Character Lio;
 	static HBITMAP hBitmap;
 	static int offset;
 
+	static int rio_hp;
+
 	switch (iMessage) {
 	case WM_CREATE:
-		lio.Load(L"Lio_stand.png");
-		walk.Load(L"Lio_walk.png");
+		lio.Load(L"mario\\stand.png");
+		walk.Load(L"mario\\run.png");
+		//walk.Load(L"Lio_walk.png");
 		bg.Load(L"BG.jpg");
+		riohpbar.Load(L"mario\\hp_bar.png");
+		riohp.Load(L"mario\\hp.png");
 		Lio.currPos.x = 200;
 		Lio.pose = 0;
 		offset = 0;
-		SetTimer(hWnd, 1, 50, NULL);
+
+		rio_hp = 363;
+
+		SetTimer(hWnd, 1, 80, NULL);
+		SetTimer(hWnd, 2, 1, NULL);
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
@@ -80,13 +89,19 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		//bg
 		bg.Draw(memdc, 0, 0, 800, 600, 0, 0, 1200, 581);
 
+		riohpbar.Draw(memdc, 5, 25, 369, 39, 0, 0, 124, 14);
+
+		if (rio_hp > 0) {
+			riohp.Draw(memdc, 8, 28, rio_hp, 33, 0, 0, 120, 10);
+		}
+
 		if (Lio.pose == 0) {
 			//lio
-			lio.Draw(memdc, Lio.currPos.x, 0, 32 * 4, 64 * 4, 0, 0, 32, 64);
+			lio.Draw(memdc, Lio.currPos.x, 380, 25 * 4, 35 * 4, offset * 26, 0, 25, 36);
 		}
 		else if (Lio.pose == 1) {
 			//walk
-			walk.Draw(memdc, Lio.currPos.x, 0, 32 * 4, 64 * 4, offset * 32, 0, 32, 64);
+			walk.Draw(memdc, Lio.currPos.x, 380, 35 * 4, 36 * 4, offset * 35, 0, 35, 36);
 		}
 
 		BitBlt(hdc, 0, 0, 800, 600, memdc, 0, 0, SRCCOPY);
@@ -95,22 +110,40 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		EndPaint(hWnd, &ps);
 		break;
 	case WM_TIMER:
-		if (Lio.pose == 1) {
-			offset++;
-			offset = offset % 6;
-		}
-		InvalidateRect(hWnd, NULL, false);
-		break;
-	case WM_CHAR:
-		if (wParam == 'j') {
-			Lio.pose = 1;
-			Lio.currPos.x += 5;
-		} 
-		break;
-	case WM_KEYUP:
-		if (wParam == 'j') {
-			Lio.pose = 0;
-			offset = 0;
+		switch (wParam)
+		{
+		case 1:
+			if (Lio.pose == 0) {
+				offset++;
+				offset = offset % 7;
+			}
+			if (Lio.pose == 1) {
+				offset++;
+				offset = offset % 8;
+			}
+			InvalidateRect(hWnd, NULL, false);
+			break;
+		case 2:
+			if (GetAsyncKeyState(0x44)) // í˜„ì¬ í‚¤ì˜ í† ê¸€ ìƒíƒœë¥¼ ì•Œ ìˆ˜ ìˆë‹¤
+			{
+				Lio.pose = 1;
+				Lio.currPos.x += 2;
+			}
+			else if (GetAsyncKeyState(0x41)) // í˜„ì¬ í‚¤ì˜ í† ê¸€ ìƒíƒœë¥¼ ì•Œ ìˆ˜ ìˆë‹¤
+			{
+				Lio.pose = 0;
+				Lio.currPos.x -= 2;
+			}
+			else if (GetAsyncKeyState(VK_SPACE)) // í˜„ì¬ í‚¤ì˜ í† ê¸€ ìƒíƒœë¥¼ ì•Œ ìˆ˜ ìˆë‹¤
+			{
+				Lio.pose = 0;
+				rio_hp -= 5;
+			}
+			else {
+				Lio.pose = 0;
+				offset = 0;
+			}
+			break;
 		}
 		break;
 	case WM_DESTROY:
@@ -121,4 +154,3 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	}
 	return (DefWindowProc(hWnd, iMessage, wParam, lParam));
 }
-
