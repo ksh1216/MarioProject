@@ -92,6 +92,7 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 	static HBITMAP hBitmap;
 	static int offset;
 	static int game_win;
+	static BOOL Attack;
 
 	static int rio_hp;
 	static int easy_hp;
@@ -212,32 +213,50 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				offset++;
 				offset = offset % 8;
 			}
-			if (Lio.pose == 7) {
-				offset++;
-				offset = offset % 5;
-			}
 
 			break;
 		case 2:
-			if (GetAsyncKeyState(0x44) & 0x8000) // 현재 키의 토글 상태를 알 수 있다
-			{
-				Lio.pose = 1;
-				Lio.currPos.x += 2;
-			}
-			else if (GetAsyncKeyState(0x41)) // 현재 키의 토글 상태를 알 수 있다
-			{
-				Lio.pose = 0;
-				Lio.currPos.x -= 2;
-			}
-			else if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
-				Lio.pose = 8; //jump
-				bJumpKeyPressed = TRUE;
-			}
-			//else {
-			//	Lio.pose = 0;
-			//	//offset = 0;
-			//}
+			if (Attack == FALSE) {
+				if (GetAsyncKeyState(0x44) & 0x8000) {
+					if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+						Lio.pose = 8;
+						bJumpKeyPressed = TRUE;
+					}
 
+					if (bJumpKeyPressed == FALSE) {
+						Lio.pose = 1;
+					}
+					Lio.currPos.x += 2;
+				}
+				else if (GetAsyncKeyState(0x41)) {
+					if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+						Lio.pose = 8;
+						bJumpKeyPressed = TRUE;
+					}
+
+					if (bJumpKeyPressed == FALSE) {
+						Lio.pose = 0;
+					}
+					Lio.currPos.x -= 2;
+				}
+				else if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+					Lio.pose = 8; //jump
+					bJumpKeyPressed = TRUE;
+				}
+				else if (GetAsyncKeyState(0x47)) {
+					Attack = TRUE;
+					Lio.pose = 7;
+					offset = 0;
+					SetTimer(hWnd, 4, 80, NULL);
+				}
+				else {
+					if (bJumpKeyPressed != TRUE) {
+						Lio.pose = 0;
+						//offset = 0;
+					}
+				}
+			}
+			
 			if (jump_downck1 == true) {
 				Lio.pose = 9;
 				jump_downck1 = false;
@@ -260,6 +279,15 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 		case 3:
 			--time;
 			
+			break;
+		case 4:	//attack
+			offset++;
+			if (offset == 5) {
+				offset = 0;
+				Attack = FALSE;
+				Lio.pose = 0;
+				KillTimer(hWnd, 4);			
+			}
 			break;
 		}
 		break;
