@@ -6,11 +6,42 @@ typedef struct grid {
 	int x, y;
 }Grid;
 
+bool jump_downck1 = false;
+bool jump_downck2 = false;
+
 typedef struct charcter {
 	Grid currPos;
 	Grid hitBox;
 	int pose;
 }Character;
+
+float Velocity = 300.f;				//	점프하는 힘
+float Gravity = 300.f;				//	낙하힘으로 상수값
+BOOL bJumpKeyPressed = FALSE;
+float JumpHeight = 400.0f;
+
+void Jump(void)
+{
+	if (!bJumpKeyPressed)		return;
+
+	
+	if (Velocity == 0.f)
+	{
+		jump_downck1 = true;
+	}
+	
+	//	착지하면 변수들 모두 초기화
+	if (Velocity <= -300.f)
+	{
+		Velocity = 300.f;
+		bJumpKeyPressed = FALSE;
+		JumpHeight = 400.0f;
+		jump_downck2 = true;
+	}
+
+	JumpHeight -= Velocity * 0.04f;
+	Velocity -= Gravity * 0.04f;
+}
 
 HINSTANCE g_hInst;
 LPCTSTR lpszClass = L"Window Class Name";
@@ -55,57 +86,113 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 {
 	HDC hdc, memdc, bufferdc;
 	PAINTSTRUCT ps;
-	static CImage lio, walk, bg, riohpbar, riohp, hurt;
+	HFONT font, oldfont;
+	static CImage lio, walk, bg, riohpbar, riohp, hurt, Easy_win, easyhp, attack, jump;
 	static Character Lio;
 	static HBITMAP hBitmap;
 	static int offset;
+	static int game_win;
 
 	static int rio_hp;
+	static int easy_hp;
+	static int time;
+
+	TCHAR str[] = L"90";
 
 	switch (iMessage) {
 	case WM_CREATE:
 		lio.Load(L"mario\\stand.png");
 		walk.Load(L"mario\\run.png");
 		hurt.Load(L"mario\\hurt.png");
+		Easy_win.Load(L"mario\\Easy_win.png");
 		bg.Load(L"BG.jpg");
 		riohpbar.Load(L"mario\\hp_bar.png");
 		riohp.Load(L"mario\\hp.png");
+		easyhp.Load(L"mario\\hp.png");
+		attack.Load(L"mario\\attack.png");
+		jump.Load(L"mario\\jump.png");
+
 		Lio.currPos.x = 200;
 		Lio.pose = 0;
 		offset = 0;
-
-		rio_hp = 363;
+		game_win = 0;
+		time = 90;
+		
+		rio_hp = 350;
+		easy_hp = 350;
 
 		SetTimer(hWnd, 1, 80, NULL);
 		SetTimer(hWnd, 2, 1, NULL);
+		SetTimer(hWnd, 3, 1000, NULL);
+		SetTimer(hWnd, 4, 0.5, NULL);
 		break;
 	case WM_PAINT:
 		hdc = BeginPaint(hWnd, &ps);
 		hBitmap = CreateCompatibleBitmap(hdc, 800, 600);
 		memdc = CreateCompatibleDC(hdc);
+		Jump();
 
 		SelectObject(memdc, hBitmap);
 
 		//bg
 		bg.Draw(memdc, 0, 0, 800, 600, 0, 0, 1200, 581);
 
-		riohpbar.Draw(memdc, 5, 25, 369, 39, 0, 0, 124, 14);
+		Rectangle(memdc, 365, 25, 419, 66);
+
+		wsprintf(str, TEXT("%d"), time);
+
+		font = CreateFont(50, 0, 0, 0, 0, 0, 0, 0, HANGEUL_CHARSET, 0, 0, 0, 0, L"휴먼옛체");
+		oldfont = (HFONT)SelectObject(memdc, font);
+		SetBkMode(memdc, TRANSPARENT);
+		TextOut(memdc, 367, 20, str, lstrlen(str));
+		SelectObject(memdc, oldfont);
+		DeleteObject(font);
+
+		riohpbar.Draw(memdc, 5, 25, 356, 39, 0, 0, 124, 14);
 
 		if (rio_hp > 0) {
 			riohp.Draw(memdc, 8, 28, rio_hp, 33, 0, 0, 120, 10);
 		}
 
+		riohpbar.Draw(memdc, 423, 25, 356, 39, 0, 0, 124, 14); //이지 막대바, 삭제 필요
+
+		if (easy_hp > 0) {
+			easyhp.Draw(memdc, 426, 28, easy_hp, 33, 0, 0, 120, 10);
+		}
+
 		if (Lio.pose == 0) {
 			//lio
-			lio.Draw(memdc, Lio.currPos.x, 380, 25 * 4, 35 * 4, offset * 26, 0, 25, 36);
+			lio.Draw(memdc, Lio.currPos.x, JumpHeight, 25 * 4, 36 * 4, offset * 26, 0, 25, 36);
 		}
 		else if (Lio.pose == 1) {
 			//walk
-			walk.Draw(memdc, Lio.currPos.x, 380, 35 * 4, 36 * 4, offset * 35, 0, 35, 36);
+			walk.Draw(memdc, Lio.currPos.x, JumpHeight, 35 * 4, 36 * 4, offset * 35, 0, 35, 36);
 		}
 		else if (Lio.pose == 5) {
 			//hult
-			hurt.Draw(memdc, Lio.currPos.x, 380, 35 * 4, 36 * 4, 0, 0, 30, 38);
+			hurt.Draw(memdc, Lio.currPos.x, JumpHeight, 35 * 4, 36 * 4, 0, 0, 30, 38);
+		}
+		else if (Lio.pose == 6) {
+			//hult
+			hurt.Draw(memdc, Lio.currPos.x, JumpHeight, 35 * 4, 36 * 4, 0, 0, 30, 38);
+		}
+		else if (Lio.pose == 7) {
+			//attack
+			attack.Draw(memdc, Lio.currPos.x, JumpHeight, 40 * 4, 36 * 4, offset * 40, 0, 40, 36);
+		}
+		else if (Lio.pose == 8) {
+			//jump1
+			jump.Draw(memdc, Lio.currPos.x, JumpHeight, 25 * 4, 36 * 4, 0, 0, 25, 39);
+		}
+		else if (Lio.pose == 9) {
+			//jump2
+			jump.Draw(memdc, Lio.currPos.x, JumpHeight, 25 * 4, 36 * 4, 25, 0, 25, 39);
+		}
+
+		if (game_win == 1) {
+			Easy_win.Draw(memdc, 285, 250, 230, 100, 0, 0, 230, 100);
+			KillTimer(hWnd, 1);
+			KillTimer(hWnd, 2);
 		}
 
 		BitBlt(hdc, 0, 0, 800, 600, memdc, 0, 0, SRCCOPY);
@@ -125,10 +212,14 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				offset++;
 				offset = offset % 8;
 			}
-			InvalidateRect(hWnd, NULL, false);
+			if (Lio.pose == 7) {
+				offset++;
+				offset = offset % 5;
+			}
+
 			break;
 		case 2:
-			if (GetAsyncKeyState(0x44)) // 현재 키의 토글 상태를 알 수 있다
+			if (GetAsyncKeyState(0x44) & 0x8000) // 현재 키의 토글 상태를 알 수 있다
 			{
 				Lio.pose = 1;
 				Lio.currPos.x += 2;
@@ -138,21 +229,44 @@ LRESULT CALLBACK WndProc(HWND hWnd, UINT iMessage, WPARAM wParam, LPARAM lParam)
 				Lio.pose = 0;
 				Lio.currPos.x -= 2;
 			}
-			else if (GetAsyncKeyState(VK_SPACE)) // 현재 키의 토글 상태를 알 수 있다
-			{
-				Lio.pose = 5;
-				rio_hp -= 5;
+			else if (GetAsyncKeyState(VK_SPACE) & 0x8000) {
+				Lio.pose = 8; //jump
+				bJumpKeyPressed = TRUE;
 			}
-			else {
+			//else {
+			//	Lio.pose = 0;
+			//	//offset = 0;
+			//}
+
+			if (jump_downck1 == true) {
+				Lio.pose = 9;
+				jump_downck1 = false;
+			}
+
+			if (jump_downck2 == true) {
 				Lio.pose = 0;
-				//offset = 0;
+				jump_downck2 = false;
 			}
+
+			if (rio_hp < 0) {
+				Lio.pose = 6;
+				game_win = 1;
+			}
+
+
+
+			InvalidateRect(hWnd, NULL, false);
+			break;
+		case 3:
+			--time;
+			
 			break;
 		}
 		break;
 	case WM_DESTROY:
 		lio.Destroy();
 		KillTimer(hWnd, 1);
+		KillTimer(hWnd, 2);
 		PostQuitMessage(0);
 		break;
 	}
